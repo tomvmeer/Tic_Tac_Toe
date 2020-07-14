@@ -81,7 +81,7 @@ pygame.display.set_caption("Tic Tac Toe")
 screen.fill(WHITE)
 drawGrid()
 
-computer = QLearning.Agent("AI")
+computer = QLearning.Agent("AI", exp_rate=0)
 computer.loadPolicy("policy_Player1")
 computer_board = np.zeros((3,3))
 X = pygame.image.load('X.png')
@@ -119,20 +119,20 @@ while run:
                     placed[(x, y)] = 'O'
                     screen.blit(O, (x * 300, y * 300))
                     turn += 1
-            if won:
-                won = False
-                screen.fill(WHITE)
-                drawGrid()
-                placed = {}
-                computer_board = np.zeros((3,3))
-                turn = 0
-            if done:
-                done = False
-                screen.fill(WHITE)
-                drawGrid()
-                placed = {}
-                computer_board = np.zeros((3, 3))
-                turn = 0
+        if won:
+            won = False
+            screen.fill(WHITE)
+            drawGrid()
+            placed = {}
+            computer_board = np.zeros((3,3))
+            turn = 0
+        if done:
+            done = False
+            screen.fill(WHITE)
+            drawGrid()
+            placed = {}
+            computer_board = np.zeros((3, 3))
+            turn = 0
     if len(placed.keys()) > 3:
         won, winner = get_winner(placed)
     if won:

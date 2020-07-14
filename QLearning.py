@@ -1,6 +1,6 @@
 import numpy as np
 import pickle
-
+import random
 
 class Game:
     def __init__(self, player1, player2):
@@ -57,8 +57,8 @@ class Game:
             self.p2.feedReward(2)
             self.loss_count += 1
         else:
-            self.p1.feedReward(0.5)
-            self.p2.feedReward(0.5)
+            self.p1.feedReward(0.2)
+            self.p2.feedReward(0.2)
             self.draw_count += 1
 
     def reward(self):
@@ -75,42 +75,33 @@ class Game:
         for i in range(rounds):
             if (i > 0) and (i % (rounds / 10) == 0):
                 print(f'{(i / rounds) * 100}% done')
-                print(f'winrate: {self.win_count / (rounds / 10)}')
-                print(f'lossrate: {self.loss_count / (rounds / 10)}')
-                print(f'drawrate: {self.draw_count / (rounds / 10)}')
-                self.win_count = 0
-                self.loss_count = 0
-                self.draw_count = 0
+                print(f'winrate: {self.win_count / i}')
+                print(f'lossrate: {self.loss_count / i}')
+                print(f'drawrate: {self.draw_count / i}')
+            self.place_symbol = random.choice([1,-1])
             while not self.end:
-                placeable = self.available_spots()
-                p1_action = self.p1.chooseAction(placeable, self.board, self.place_symbol)
-                self.updateState(p1_action)
-                hash = self.get_Hash()
-                self.p1.addState(hash)
-                win = self.winner()
+                if self.place_symbol == 1:
+                    placeable = self.available_spots()
+                    p1_action = self.p1.chooseAction(placeable, self.board, self.place_symbol)
+                    self.updateState(p1_action)
+                    hash = self.get_Hash()
+                    self.p1.addState(hash)
+                    win = self.winner()
+                else:
+                    placeable = self.available_spots()
+                    p2_action = self.p2.chooseAction(placeable, self.board, self.place_symbol)
+                    self.updateState(p2_action)
+                    hash = self.get_Hash()
+                    self.p2.addState(hash)
+                    win = self.winner()
                 if win is not None:  # did player 1 win after their move?
                     self.giveReward()
                     self.p1.reset()
                     self.p2.reset()
                     self.reset()
                     break
-                else:
-                    placeable = self.available_spots()
-                    p2_action = self.p1.chooseAction(placeable, self.board, self.place_symbol)
-                    self.updateState(p2_action)
-                    hash = self.get_Hash()
-                    self.p2.addState(hash)
-                    win = self.winner()
-                    if win is not None:  # did player 1 win after their move?
-                        self.giveReward()
-                        self.p1.reset()
-                        self.p2.reset()
-                        self.reset()
-                        break
-
 
 class Agent:
-
     def __init__(self, name, exp_rate=0.3, lr=0.2, decay_gamma=0.9):
         self.name = name
         self.exp_rate = exp_rate
@@ -127,18 +118,18 @@ class Agent:
         if np.random.uniform(0, 1) <= self.exp_rate:
             # take random action
             index = np.random.choice(len(positions))
-            action = positions[index]
+            action = tuple(positions[index])
         else:
             # take greedy action
             value_max = -1 * float("inf")
             for p in positions:
                 next_board = current_board.copy()
-                next_board[p] = symbol
+                next_board[tuple(p)] = symbol
                 next_boardHash = self.get_Hash(next_board)
                 value = 0 if self.state_values.get(next_boardHash) is None else self.state_values.get(next_boardHash)
                 if value >= value_max:
                     value_max = value
-                    action = p
+                    action = tuple(p)
         return action
 
         # append a hash state
@@ -168,12 +159,15 @@ class Agent:
 
 
 if __name__ == "__main__":
-    p1 = Agent("Player1")
-    p2 = Agent("Player2")
-    game = Game(p1, p2)
+    p1 = Agent("Player1", exp_rate=0.1)
+    p2 = Agent("Player2", exp_rate=0.1)
 
+    p1.loadPolicy("policy_Player1")
+    p2.loadPolicy("policy_Player2")
+    game = Game(p1, p2)
     print("start training...")
-    game.play(10000)
+    game.play(20000)
     print("done!")
     p1.save_states()
+    p2.save_states()
 
