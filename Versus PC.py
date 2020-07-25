@@ -1,6 +1,7 @@
 import pygame
 import QLearning
 import numpy as np
+import random
 import time
 
 def drawGrid():
@@ -33,7 +34,6 @@ def get_diag_winner(placed):
 
 
 def get_winner(placed):
-    print(get_diag_winner(placed)[0])
     if not get_diag_winner(placed)[0]:
         X_count = [[0, 0], [0, 0], [0, 0]]
         O_count = [[0, 0], [0, 0], [0, 0]]
@@ -89,66 +89,85 @@ O = pygame.image.load('O.png')
 X = pygame.transform.smoothscale(X, (300, 300))
 O = pygame.transform.smoothscale(O, (300, 300))
 placed = {}
-turn = 0
 # Used to manage how fast the screen updates
 clock = pygame.time.Clock()
 done = False
 won = False
 run = True
-
+players = ['AI','Human']
+pick = random.choice([0,1])
+player_symbols = {'X': players.pop(pick), 'O': players.pop(0)}
+turn = 'X'
+printed_end = False
 # -------- Main Program Loop -----------
 while run:
     # --- Main event loop
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             run = False
-        if turn % 2 == 0:
-            placeable = available_spots(computer_board)
-            p1_action = computer.chooseAction(placeable, computer_board, 1)
-            x,y = tuple(p1_action)
-            computer_board[(x,y)] = 1
-            placed[(x,y)] = 'X'
-            screen.blit(X, (x * 300, y * 300))
-            turn += 1
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            x, y = event.pos
-            x, y = x // 300, y // 300
-            if turn % 2 != 0:
-                if (x, y) not in placed:
-                    computer_board[(x, y)] = -1
-                    placed[(x, y)] = 'O'
-                    screen.blit(O, (x * 300, y * 300))
-                    turn += 1
-        if won:
-            won = False
-            screen.fill(WHITE)
-            drawGrid()
-            placed = {}
-            computer_board = np.zeros((3,3))
-            turn = 0
-        if done:
-            done = False
-            screen.fill(WHITE)
-            drawGrid()
-            placed = {}
-            computer_board = np.zeros((3, 3))
-            turn = 0
-    if len(placed.keys()) > 3:
+        if not won and not done:
+            if player_symbols[turn] == 'AI':
+                placeable = available_spots(computer_board)
+                p1_action = computer.chooseAction(placeable, computer_board, 1)
+                if p1_action is None:
+                    done = True
+                    break
+                x,y = tuple(p1_action)
+                computer_board[(x,y)] = 1
+                placed[(x,y)] = turn
+                screen.blit(X if turn == 'X' else O, (x * 300, y * 300))
+                turn = 'O' if turn == 'X' else 'X'
+            else:
+                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    x, y = event.pos
+                    x, y = x // 300, y // 300
+                    if (x, y) not in placed:
+                        computer_board[(x, y)] = -1
+                        placed[(x, y)] = turn
+                        screen.blit(O if turn == 'O' else X, (x * 300, y * 300))
+                        turn = 'O' if turn == 'X' else 'X'
+        else:
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                won = False
+                done = False
+                printed_end = False
+                screen.fill(WHITE)
+                drawGrid()
+                placed = {}
+                computer_board = np.zeros((3,3))
+                turn = 'X'
+                players = ['AI', 'Human']
+                pick = random.choice([0, 1])
+                player_symbols = {'X': players.pop(pick), 'O': players.pop(0)}
+                print(player_symbols)
+        # if done:
+        #
+        #     screen.fill(WHITE)
+        #     drawGrid()
+        #     placed = {}
+        #     computer_board = np.zeros((3, 3))
+        #     turn = 'X'
+        #     players = ['AI', 'Human']
+        #     pick = random.choice([0, 1])
+        #     player_symbols = {'X': players.pop(pick), 'O': players.pop(0)}
+    if len(placed.keys()) > 3 and not won and not done:
         won, winner = get_winner(placed)
-    if won:
-        vict = font.render(f'Game Over: {winner} won!', True, WHITE, BLUE)
+    if won and not printed_end:
+        vict = font.render(f'Game Over: {winner} won!', True, RED)
         textRect = vict.get_rect()
         textRect.center = (width // 2, height // 2)
-        screen.fill(WHITE)
+        # screen.fill(WHITE)
         screen.blit(vict, textRect)
+        printed_end = True
 
-    if len(placed.keys()) == 9 and not won:
+    if len(placed.keys()) == 9 and not won and not printed_end:
         done = True
-        draw = font.render('Game Over: Draw', True, RED, BLUE)
+        draw = font.render('Game Over: Draw', True, RED)
         textRect = draw.get_rect()
         textRect.center = (width // 2, height // 2)
-        screen.fill(WHITE)
+        # screen.fill(WHITE)
         screen.blit(draw, textRect)
+        printed_end = True
         # --- Game logic should go here
 
     # --- Screen-clearing code goes here

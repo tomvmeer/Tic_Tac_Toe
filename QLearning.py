@@ -121,6 +121,7 @@ class Agent:
             action = tuple(positions[index])
         else:
             # take greedy action
+            action = None
             value_max = -1 * float("inf")
             for p in positions:
                 next_board = current_board.copy()
@@ -166,7 +167,7 @@ if __name__ == "__main__":
     p2.loadPolicy("policy_Player2")
     game = Game(p1, p2)
     print("start training...")
-    game.play(20000)
+    game.play(200000)
     print("done!")
     p1.save_states()
     p2.save_states()
